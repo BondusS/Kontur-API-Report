@@ -8,10 +8,8 @@ use App\Models\Reporter;
 class HomeCheckController extends Controller
 {
     public function check(Request $request){
-        $report = new Reporter();
-        $report->key = $request->input(key: 'key');
-        $report->inn = $request->input(key: 'inn');
-        $data = $report->returndata($report->key, $report->inn);
+        $report = new Reporter(key: $request->input(key: 'key'), inn: $request->input(key: 'inn'));
+        $data = $report->returndata();
         $report->text = '';
         $report->printing($data);
         /*dd($report->text);*/
