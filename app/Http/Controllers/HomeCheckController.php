@@ -10,9 +10,7 @@ class HomeCheckController extends Controller
     public function check(Request $request){
         $report = new Reporter(key: $request->input(key: 'key'), inn: $request->input(key: 'inn'));
         $data = $report->returndata();
-        $report->text = '';
-        $report->printing($data);
-        /*dd($report->text);*/
-        return view(view: 'report', data: ['text' => $report->text]);
+        $text = $report->getOrganizationReqHTML($data[0]);
+        return view(view: 'report', data: ['text' => $text]);
     }
 }
