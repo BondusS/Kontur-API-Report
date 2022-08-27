@@ -6,32 +6,39 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Reporter{
-    public string $key;
-    public string $inn;
+
+    public string $key; // Ключ для работы с API
+    public string $inn; // ИНН организации, к которой формируется отчёт
+    
+    // Конструктор объекта класса
     public function __construct(string $key, string $inn){
         $this->key = $key;
         $this->inn = $inn;
     }
+
+    // Получение json отчёта в виде массива
     public function returndata(){
-        $url = 'https://focus-api.kontur.ru/api3/req';
-        $options = array(
+        $url = 'https://focus-api.kontur.ru/api3/req'; // Основа адреса запроса
+        $options = array( 
             'key' => $this->key,
             'inn' => $this->inn
         );
-        $adres = $url.'?'.http_build_query($options);
-        $response = file_get_contents($adres);
-        $data = json_decode($response, true);
+        $adres = $url.'?'.http_build_query($options); // Сформированный адрес запроса
+        $response = file_get_contents($adres); // Полученный json отчёт
+        $data = json_decode($response, true); // Отчёт в виде массива
         return $data;
     }
+
+    // Получение отчёта в виде html
     public function getOrganizationReqHTML($reqRawData): string {
         $result = '<h3>ИНН '.$reqRawData['inn'].'</h3>'.PHP_EOL;
         if (isset($reqRawData['IP'])) {
-            $data = $this->getOrganizationReqIndividualData($reqRawData['IP']);
             $result .= '<h4>Информация об индивидуальном предпринимателе</h4>'.PHP_EOL;
+            $data = $this->getOrganizationReqIndividualData($reqRawData['IP']);
         } 
         else {
-            $data = $this->getOrganizationReqLegalData($reqRawData['UL']);
             $result .= '<h4>Информация о юридическом лице</h4>'.PHP_EOL;
+            $data = $this->getOrganizationReqLegalData($reqRawData['UL']);
         }
         $result .= '<ul>';
         foreach ($data as $datum) {
@@ -40,6 +47,8 @@ class Reporter{
         $result .= '</ul>';
         return $result;
     }
+
+    // Отчёт об индивидуальном предпренимателе
     protected function getOrganizationReqIndividualData(array $reqRawData): array {
         return [
             'fio' => [
@@ -151,10 +160,14 @@ class Reporter{
             ],
         ];
     }
+
+    // Получение значения логической переменной в локлизованном виде
     protected function boolToRUString(bool $reply) {
         $translation = $reply ? 'Да' : 'Нет';
         return $translation;
     }
+
+    // Получение информации о статусе организации
     protected function getStatusData(?array $status): ?array {
         return [
             'statusString' => [
@@ -190,6 +203,8 @@ class Reporter{
             ],
         ];
     }
+
+    // Получение адреса в РФ
     protected function getParsedAddressRFData(?array $legalAddress): ?array {
         if (empty($legalAddress)) {
             return null;
@@ -247,18 +262,24 @@ class Reporter{
             ],
         ];
     }
+
+    // Получение информации о топониме
     protected function getDataFromToponym(?array $toponym): ?string {
         if (empty($toponym)) {
             return null;
         }
         return ($toponym['topoFullName'] ?? $toponym['topoShortName'] ?? '').' '.$toponym['topoValue'];
     }
+
+    // Получение информации об основном виде деятельности
     protected function getActivityValue(?array $activity): ?array {
         if (empty($activity)) {
             return null;
         }
         return ['label' => $activity['code'], 'has_children' => false, 'value' => $activity['date'].' - '.$activity['text']];
     }
+
+    // Получение информации об основных видах деятельности
     protected function getActivities(?array $activities): ?array {
         if (empty($activities)) {
             return null;
@@ -267,6 +288,8 @@ class Reporter{
             return $this->getActivityValue($activity);
         }, $activities);
     }
+
+    // Получение сведений о регистрации
     protected function getRegInfoData(?array $regInfo): ?array {
         if (empty($regInfo)) {
             return null;
@@ -289,6 +312,8 @@ class Reporter{
             ],
         ];
     }
+
+    // Получение сведений о постановке на учет в налоговом органе
     protected function getNalogRegBodyData(?array $nalogRegBody): ?array {
         if (empty($nalogRegBody)) {
             return null;
@@ -326,6 +351,8 @@ class Reporter{
             ],
         ];
     }
+
+    // Получение информации о юридическом лице
     protected function getOrganizationReqLegalData(array $reqRawData): array {
         return [
             'kpp' => [
@@ -463,6 +490,8 @@ class Reporter{
         ];
         return [];
     }
+
+    // Получение наименования юр лица
     protected function getLegalNameData(?array $legalName): ?array {
         return [
             'short' => [
@@ -487,6 +516,8 @@ class Reporter{
             ],
         ];
     }
+
+    // Получение информации о филиалах и представительствах
     protected function getBranchesData(?array $branches): ?array {
         if (empty($branches)) {
             return null;
@@ -521,6 +552,8 @@ class Reporter{
             ];
         }, $branches);
     }
+
+    // Получение адреса вне рф
     protected function getForeignAddressData(?array $foreignAddress): ?array {
         if (empty($foreignAddress)) {
             return null;
@@ -538,6 +571,8 @@ class Reporter{
             ],
         ];
     }
+
+    // Получение информации о руководителях
     protected function getHeadsData(?array $heads): ?array {
         if (empty($heads)) {
             return null;
@@ -571,6 +606,8 @@ class Reporter{
             ];
         }, $heads);
     }
+
+    // Получение информаци об управляющих
     protected function getManagementCompaniesData(?array $managementCompanies): ?array {
         if (empty($managementCompanies)) {
             return null;
@@ -604,6 +641,8 @@ class Reporter{
             ];
         }, $managementCompanies);
     }
+
+    // Получение cведений о держателе реестра акционеров акционерного общества
     protected function getRegistrarOfShareholdersData(?array $registrarOfShareholders): ?array {
         if (empty($registrarOfShareholders)) {
             return null;
@@ -636,6 +675,8 @@ class Reporter{
             ],
         ];
     }
+
+    // Формирование из данных html кода
     protected function dataToUL(array $data): string {
         if (! empty($data['has_children'])) {
             if ($data['value'] === null) {
