@@ -29,136 +29,46 @@ class Reporter{
         return $data;
     }
 
-    // Получение отчёта в виде html
-    public function getOrganizationReqHTML($reqRawData): string {
-        $result = '<h3>ИНН '.$reqRawData['inn'].'</h3>'.PHP_EOL;
-        if (isset($reqRawData['IP'])) {
+    // Получение html отчёта
+    public function getOrganizationReqHTML($JsonData){
+        $result = '<h3>ИНН '.$JsonData['inn'].'</h3>'.PHP_EOL;
+        if (isset($JsonData['IP'])) {
             $result .= '<h4>Информация об индивидуальном предпринимателе</h4>'.PHP_EOL;
-            $data = $this->getOrganizationReqIndividualData($reqRawData['IP']);
-        } 
+            $data = $JsonData['IP'];
+        }
         else {
             $result .= '<h4>Информация о юридическом лице</h4>'.PHP_EOL;
-            $data = $this->getOrganizationReqLegalData($reqRawData['UL']);
+            $data = $JsonData['UL'];
         }
         $result .= '<ul>';
-        foreach ($data as $datum) {
-            $result .= $this->dataToUL($datum);
-        }
+        $result .= $this->PrintingDataAsList($data);
         $result .= '</ul>';
         return $result;
     }
 
-    // Отчёт об индивидуальном предпренимателе
-    protected function getOrganizationReqIndividualData(array $reqRawData): array {
-        return [
-            'fio' => [
-                'label' => 'ФИО',
-                'has_children' => false,
-                'value' => $reqRawData['fio'] ?? null,
-            ],
-            'okpo' => [
-                'label' => 'Код ОКПО',
-                'has_children' => false,
-                'value' => $reqRawData['okpo'] ?? null,
-            ],
-            'okato' => [
-                'label' => 'Код ОКАТО',
-                'has_children' => false,
-                'value' => $reqRawData['okato'] ?? null,
-            ],
-            'okfs' => [
-                'label' => 'Код ОКФС',
-                'has_children' => false,
-                'value' => $reqRawData['okfs'] ?? null,
-            ],
-            'okogu' => [
-                'label' => 'Код ОКОГУ',
-                'has_children' => false,
-                'value' => $reqRawData['okogu'] ?? null,
-            ],
-            'okopf' => [
-                'label' => 'Код ОКОПФ',
-                'has_children' => false,
-                'value' => $reqRawData['okopf'] ?? null,
-            ],
-            'opf' => [
-                'label' => 'Наименование организационно-правовой формы',
-                'has_children' => false,
-                'value' => $reqRawData['opf'] ?? null,
-            ],
-            'oktmo' => [
-                'label' => 'Код ОКТМО',
-                'has_children' => false,
-                'value' => $reqRawData['oktmo'] ?? null,
-            ],
-            'registrationDate' => [
-                'label' => 'Дата образования',
-                'has_children' => false,
-                'value' => $reqRawData['registrationDate'] ?? null,
-            ],
-            'dissolutionDate' => [
-                'label' => 'Дата прекращения деятельности в результате ликвидации, реорганизации или других событий',
-                'has_children' => false,
-                'value' => $reqRawData['dissolutionDate'] ?? null,
-            ],
-            'status' => [
-                'label' => 'Статус организации',
-                'has_children' => true,
-                'value' => $this->getStatusData($reqRawData['status']),
-            ],
-            'pfrRegNumber' => [
-                'label' => 'Регистрационный номер ПФР',
-                'has_children' => false,
-                'value' => $reqRawData['pfrRegNumber'] ?? null,
-            ],
-            'fssRegNumber' => [
-                'label' => 'Регистрационный номер ФСС',
-                'has_children' => false,
-                'value' => $reqRawData['fssRegNumber'] ?? null,
-            ],
-            'fomsRegNumber' => [
-                'label' => 'Регистрационный номер ФОМС',
-                'has_children' => false,
-                'value' => $reqRawData['fomsRegNumber'] ?? null,
-            ],
-            'shortenedAddress' => [
-                'label' => 'Информация о местонахождении ИП (может отсутствовать или устареть)',
-                'has_children' => true,
-                'value' => $this->getParsedAddressRFData($reqRawData['shortenedAddress'] ?? null),
-            ],
-            'activities' => [
-                'label' => 'Виды деятельности',
-                'has_children' => true,
-                'value' => [
-                    'principalActivity' => [
-                        'label' => 'Основной вид деятельности',
-                        'has_children' => true,
-                        'value' => [$this->getActivityValue($reqRawData['activities']['principalActivity'] ?? null)],
-                    ],
-                    'complementaryActivities' => [
-                        'label' => 'Дополнительные виды деятельности',
-                        'has_children' => true,
-                        'value' => $this->getActivities($reqRawData['activities']['complementaryActivities'] ?? null),
-                    ],
-                    'okvedVersion' => [
-                        'label' => 'Версия справочника ОКВЭД. Значение "2" соответствует ОК 029-2014 (КДЕС Ред. 2), отсутствие поля версии '.
-                            'соответствует ОК 029-2001 (КДЕС Ред.1)',
-                        'has_children' => false,
-                        'value' => $reqRawData['activities']['okvedVersion'] ?? null,
-                    ],
-                ],
-            ],
-            'regInfo' => [
-                'label' => 'Сведения о регистрации',
-                'has_children' => true,
-                'value' => $this->getRegInfoData($reqRawData['regInfo'] ?? null),
-            ],
-            'nalogRegBody' => [
-                'label' => 'Сведения о постановке на учет в налоговом органе',
-                'has_children' => true,
-                'value' => $this->getNalogRegBodyData($reqRawData['nalogRegBody'] ?? null),
-            ],
-        ];
+    // Вывод данных в виде списка
+    public function PrintingDataAsList($data){
+        $ListResult = '';
+        foreach($data as $key => $value){
+            if(gettype($value) == 'array'){
+                if(gettype($key) == 'integer'){
+                    $ListResult .= '<li>'.($key+1).' :</li>'.PHP_EOL;
+                }
+                else{
+                $ListResult .= '<li>'.$this->KeyRuDictionary[$key].':</li>'.PHP_EOL;
+                }
+                $ListResult .= '<ul>';
+                $ListResult .= $this->PrintingDataAsList($value);
+                $ListResult .= '</ul>';
+            }
+            else if(gettype($value) == 'boolean'){
+                $ListResult .= '<li>'.$this->KeyRuDictionary[$key].' - '.$this->boolToRUString($value).'</li>'.PHP_EOL;
+            }
+            else{
+                $ListResult .= '<li>'.$this->KeyRuDictionary[$key].' - '.$value.'</li>'.PHP_EOL; 
+            }
+        }
+        return $ListResult;
     }
 
     // Получение значения логической переменной в локлизованном виде
@@ -167,531 +77,97 @@ class Reporter{
         return $translation;
     }
 
-    // Получение информации о статусе организации
-    protected function getStatusData(?array $status): ?array {
-        return [
-            'statusString' => [
-                'label' => 'Неформализованное описание статуса',
-                'has_children' => false,
-                'value' => $status['statusString'] ?? null,
-            ],
-            'reorganizing' => [
-                'label' => 'В процессе реорганизации (может прекратить деятельность в результате реорганизации)',
-                'has_children' => false,
-                'value' => isset($status['reorganizing']) ? $this->boolToRUString($status['reorganizing']) : null,
-            ],
-            'bankrupting' => [
-                'label' => 'В процессе банкротства по данным ЕГРЮЛ (обращаем внимание, что не все организации, находящиеся в процессе '.
-                    'банкротства, имеют банкротный статус)',
-                'has_children' => false,
-                'value' => isset($status['bankrupting']) ? $this->boolToRUString($status['bankrupting']) : null,
-            ],
-            'dissolving' => [
-                'label' => 'В стадии ликвидации (либо планируется исключение из ЕГРЮЛ)',
-                'has_children' => false,
-                'value' => isset($status['dissolving']) ? $this->boolToRUString($status['dissolving']) : null,
-            ],
-            'dissolved' => [
-                'label' => 'Недействующее',
-                'has_children' => false,
-                'value' => isset($status['dissolved']) ? $this->boolToRUString($status['dissolved']) : null,
-            ],
-            'date' => [
-                'label' => 'Дата',
-                'has_children' => false,
-                'value' => $status['date'] ?? null,
-            ],
-        ];
-    }
-
-    // Получение адреса в РФ
-    protected function getParsedAddressRFData(?array $legalAddress): ?array {
-        if (empty($legalAddress)) {
-            return null;
-        }
-        return [
-            'zipCode' => [
-                'label' => 'Индекс',
-                'has_children' => false,
-                'value' => $legalAddress['zipCode'] ?? null,
-            ],
-            'regionCode' => [
-                'label' => 'Код региона',
-                'has_children' => false,
-                'value' => $legalAddress['regionCode'] ?? null,
-            ],
-            'regionName' => [
-                'label' => 'Регион',
-                'has_children' => false,
-                'value' => $this->getDataFromToponym($legalAddress['regionName'] ?? null),
-            ],
-            'district' => [
-                'label' => 'Район',
-                'has_children' => false,
-                'value' => $this->getDataFromToponym($legalAddress['district'] ?? null),
-            ],
-            'city' => [
-                'label' => 'Город',
-                'has_children' => false,
-                'value' => $this->getDataFromToponym($legalAddress['city'] ?? null),
-            ],
-            'settlement' => [
-                'label' => 'Населенный пункт',
-                'has_children' => false,
-                'value' => $this->getDataFromToponym($legalAddress['settlement'] ?? null),
-            ],
-            'street' => [
-                'label' => 'Улица',
-                'has_children' => false,
-                'value' => $this->getDataFromToponym($legalAddress['street'] ?? null),
-            ],
-            'house' => [
-                'label' => 'Дом',
-                'has_children' => false,
-                'value' => $this->getDataFromToponym($legalAddress['house'] ?? null),
-            ],
-            'bulk' => [
-                'label' => 'Корпус',
-                'has_children' => false,
-                'value' => $this->getDataFromToponym($legalAddress['bulk'] ?? null),
-            ],
-            'flat' => [
-                'label' => 'Офис/квартира/комната',
-                'has_children' => false,
-                'value' => $this->getDataFromToponym($legalAddress['flat'] ?? null),
-            ],
-        ];
-    }
-
-    // Получение информации о топониме
-    protected function getDataFromToponym(?array $toponym): ?string {
-        if (empty($toponym)) {
-            return null;
-        }
-        return ($toponym['topoFullName'] ?? $toponym['topoShortName'] ?? '').' '.$toponym['topoValue'];
-    }
-
-    // Получение информации об основном виде деятельности
-    protected function getActivityValue(?array $activity): ?array {
-        if (empty($activity)) {
-            return null;
-        }
-        return ['label' => $activity['code'], 'has_children' => false, 'value' => $activity['date'].' - '.$activity['text']];
-    }
-
-    // Получение информации об основных видах деятельности
-    protected function getActivities(?array $activities): ?array {
-        if (empty($activities)) {
-            return null;
-        }
-        return array_map(function ($activity) {
-            return $this->getActivityValue($activity);
-        }, $activities);
-    }
-
-    // Получение сведений о регистрации
-    protected function getRegInfoData(?array $regInfo): ?array {
-        if (empty($regInfo)) {
-            return null;
-        }
-        return [
-            'ogrnDate' => [
-                'label' => 'Дата присвоения ОГРН',
-                'has_children' => false,
-                'value' => $regInfo['ogrnDate'] ?? null,
-            ],
-            'regName' => [
-                'label' => 'Наименование органа, зарегистрировавшего юридическое лицо до 1 июля 2002 года',
-                'has_children' => false,
-                'value' => $regInfo['regName'] ?? null,
-            ],
-            'regNum' => [
-                'label' => 'Регистрационный номер, присвоенный до 1 июля 2002 года',
-                'has_children' => false,
-                'value' => $regInfo['regNum'] ?? null,
-            ],
-        ];
-    }
-
-    // Получение сведений о постановке на учет в налоговом органе
-    protected function getNalogRegBodyData(?array $nalogRegBody): ?array {
-        if (empty($nalogRegBody)) {
-            return null;
-        }
-        return [
-            'nalogCode' => [
-                'label' => 'Код налогового органа',
-                'has_children' => false,
-                'value' => $nalogRegBody['nalogCode'] ?? null,
-            ],
-            'nalogName' => [
-                'label' => 'Наименование налогового органа',
-                'has_children' => false,
-                'value' => $nalogRegBody['nalogName'] ?? null,
-            ],
-            'nalogRegDate' => [
-                'label' => 'Дата постановки на учет',
-                'has_children' => false,
-                'value' => $nalogRegBody['nalogRegDate'] ?? null,
-            ],
-            'nalogRegAddress' => [
-                'label' => 'Адрес регистрирующего органа',
-                'has_children' => false,
-                'value' => $nalogRegBody['nalogRegAddress'] ?? null,
-            ],
-            'kpp' => [
-                'label' => 'КПП',
-                'has_children' => false,
-                'value' => $nalogRegBody['kpp'] ?? null,
-            ],
-            'date' => [
-                'label' => 'Дата',
-                'has_children' => false,
-                'value' => $nalogRegBody['date'] ?? null,
-            ],
-        ];
-    }
-
-    // Получение информации о юридическом лице
-    protected function getOrganizationReqLegalData(array $reqRawData): array {
-        return [
-            'kpp' => [
-                'label' => 'КПП',
-                'has_children' => false,
-                'value' => $reqRawData['kpp'] ?? null,
-            ],
-            'okpo' => [
-                'label' => 'Код ОКПО',
-                'has_children' => false,
-                'value' => $reqRawData['okpo'] ?? null,
-            ],
-            'okato' => [
-                'label' => 'Код ОКАТО',
-                'has_children' => false,
-                'value' => $reqRawData['okato'] ?? null,
-            ],
-            'okfs' => [
-                'label' => 'Код ОКФС',
-                'has_children' => false,
-                'value' => $reqRawData['okfs'] ?? null,
-            ],
-            'oktmo' => [
-                'label' => 'Код ОКТМО',
-                'has_children' => false,
-                'value' => $reqRawData['oktmo'] ?? null,
-            ],
-            'okogu' => [
-                'label' => 'Код ОКОГУ',
-                'has_children' => false,
-                'value' => $reqRawData['okogu'] ?? null,
-            ],
-            'okopf' => [
-                'label' => 'Код ОКОПФ',
-                'has_children' => false,
-                'value' => $reqRawData['okopf'] ?? null,
-            ],
-            'opf' => [
-                'label' => 'Наименование организационно-правовой формы',
-                'has_children' => false,
-                'value' => $reqRawData['opf'] ?? null,
-            ],
-            'legalName' => [
-                'label' => 'Наименование юридического лица',
-                'has_children' => true,
-                'value' => $this->getLegalNameData($reqRawData['legalName']),
-            ],
-            'legalAddress' => [
-                'label' => 'Юридический адрес',
-                'has_children' => true,
-                'value' => [
-                    'parsedAddressRF' => [
-                        'label' => 'Разобранный на составляющие адрес в РФ',
-                        'has_children' => true,
-                        'value' => $this->getParsedAddressRFData($reqRawData['legalAddress']['parsedAddressRF'] ?? null),
-                    ],
-                    'date' => ['label' => 'Дата',
-                        'has_children' => false,
-                        'value' => $reqRawData['legalAddress']['date'] ?? null,
-                    ],
-                    'firstDate' => [
-                        'label' => 'Дата первого внесения сведений',
-                        'has_children' => false,
-                        'value' => $reqRawData['legalAddress']['firstDate'] ?? null,
-                    ],
-                ],
-            ],
-            'branches' => [
-                'label' => 'Филиалы и представительства',
-                'has_children' => true,
-                'value' => $this->getBranchesData($reqRawData['branches'] ?? null),
-            ],
-            'status' => [
-                'label' => 'Статус организации',
-                'has_children' => true,
-                'value' => $this->getStatusData($reqRawData['status']),
-            ],
-            'registrationDate' => [
-                'label' => 'Дата образования',
-                'has_children' => false,
-                'value' => $reqRawData['registrationDate'] ?? null,
-            ],
-            'dissolutionDate' => [
-                'label' => 'Дата прекращения деятельности в результате ликвидации, реорганизации или других событий',
-                'has_children' => false,
-                'value' => $reqRawData['dissolutionDate'] ?? null,
-            ],
-            'heads' => [
-                'label' => 'Лица, имеющие право подписи без доверенности (руководители)',
-                'has_children' => true,
-                'value' => $this->getHeadsData($reqRawData['heads'] ?? null),
-            ],
-            'managementCompanies' => [
-                'label' => 'Управляющие компании',
-                'has_children' => true,
-                'value' => $this->getManagementCompaniesData($reqRawData['managementCompanies'] ?? null),
-            ],
-            'activities' => [
-                'label' => 'Виды деятельности',
-                'has_children' => true,
-                'value' => [
-                    'principalActivity' => [
-                        'label' => 'Основной вид деятельности',
-                        'has_children' => true,
-                        'value' => [$this->getActivityValue($reqRawData['activities']['principalActivity'] ?? null)],
-                    ],
-                    'complementaryActivities' => [
-                        'label' => 'Дополнительные виды деятельности',
-                        'has_children' => true,
-                        'value' => $this->getActivities($reqRawData['activities']['complementaryActivities'] ?? null),
-                    ],
-                    'okvedVersion' => [
-                        'label' => 'Версия справочника ОКВЭД. Значение "2" соответствует ОК 029-2014 (КДЕС Ред. 2), отсутствие поля версии '.
-                            'соответствует ОК 029-2001 (КДЕС Ред.1)',
-                        'has_children' => false,
-                        'value' => $reqRawData['activities']['okvedVersion'] ?? null,
-                    ],
-                ],
-            ],
-            'regInfo' => [
-                'label' => 'Сведения о регистрации',
-                'has_children' => true,
-                'value' => $this->getRegInfoData($reqRawData['regInfo'] ?? null),
-            ],
-            'nalogRegBody' => [
-                'label' => 'Сведения о постановке на учет в налоговом органе',
-                'has_children' => true,
-                'value' => $this->getNalogRegBodyData($reqRawData['nalogRegBody'] ?? null),
-            ],
-            'registrarOfShareholders' => [
-                'label' => 'Сведения о держателе реестра акционеров акционерного общества',
-                'has_children' => true,
-                'value' => $this->getRegistrarOfShareholdersData($reqRawData['registrarOfShareholders'] ?? null),
-            ],
-        ];
-        return [];
-    }
-
-    // Получение наименования юр лица
-    protected function getLegalNameData(?array $legalName): ?array {
-        return [
-            'short' => [
-                'label' => 'Краткое наименование организации',
-                'has_children' => false,
-                'value' => $legalName['short'] ?? null,
-            ],
-            'full' => [
-                'label' => 'Полное наименование организации',
-                'has_children' => false,
-                'value' => $legalName['full'] ?? null,
-            ],
-            'readable' => [
-                'label' => 'Полное наименование, приведенное к нижнему регистру с сокращением аббревиатур',
-                'has_children' => false,
-                'value' => $legalName['readable'] ?? null,
-            ],
-            'date' => [
-                'label' => 'Дата',
-                'has_children' => false,
-                'value' => $legalName['date'] ?? null,
-            ],
-        ];
-    }
-
-    // Получение информации о филиалах и представительствах
-    protected function getBranchesData(?array $branches): ?array {
-        if (empty($branches)) {
-            return null;
-        }
-        return array_map(function ($branch) {
-            return [
-                'label' => 'Наименование филиала или представительства - <strong>'.
-                    ($branch['name'] ?? 'Данные о наименовании филиала/представительства отсутствует').'</strong>',
-                'has_children' => true,
-                'value' => [
-                    'kpp' => [
-                        'label' => 'КПП',
-                        'has_children' => false,
-                        'value' => $branch['kpp'] ?? null,
-                    ],
-                    'parsedAddressRF' => [
-                        'label' => 'Разобранный на составляющие адрес в РФ',
-                        'has_children' => true,
-                        'value' => $this->getParsedAddressRFData($branch['parsedAddressRF'] ?? null),
-                    ],
-                    'foreignAddress' => [
-                        'label' => 'Адрес вне РФ',
-                        'has_children' => true,
-                        'value' => $this->getForeignAddressData($branch['foreignAddress'] ?? null),
-                    ],
-                    'date' => [
-                        'label' => 'Дата',
-                        'has_children' => false,
-                        'value' => $branch['date'] ?? null,
-                    ],
-                ],
-            ];
-        }, $branches);
-    }
-
-    // Получение адреса вне рф
-    protected function getForeignAddressData(?array $foreignAddress): ?array {
-        if (empty($foreignAddress)) {
-            return null;
-        }
-        return [
-            'countryName' => [
-                'label' => 'Наименование страны',
-                'has_children' => false,
-                'value' => $foreignAddress['countryName'] ?? null,
-            ],
-            'addressString' => [
-                'label' => 'Строка, содержащая адрес',
-                'has_children' => false,
-                'value' => $foreignAddress['addressString'] ?? null,
-            ],
-        ];
-    }
-
-    // Получение информации о руководителях
-    protected function getHeadsData(?array $heads): ?array {
-        if (empty($heads)) {
-            return null;
-        }
-        return array_map(static function ($head) {
-            return [
-                'label' => '<strong>'.$head['fio'].'</strong>',
-                'has_children' => true,
-                'value' => [
-                    'innfl' => [
-                        'label' => 'ИННФЛ',
-                        'has_children' => false,
-                        'value' => $head['innfl'] ?? null,
-                    ],
-                    'position' => [
-                        'label' => 'Должность',
-                        'has_children' => false,
-                        'value' => $head['position'] ?? null,
-                    ],
-                    'date' => [
-                        'label' => 'Дата последнего внесения изменений',
-                        'has_children' => false,
-                        'value' => $head['date'] ?? null,
-                    ],
-                    'firstDate' => [
-                        'label' => 'Дата первого внесения сведений',
-                        'has_children' => false,
-                        'value' => $head['firstDate'] ?? null,
-                    ],
-                ],
-            ];
-        }, $heads);
-    }
-
-    // Получение информаци об управляющих
-    protected function getManagementCompaniesData(?array $managementCompanies): ?array {
-        if (empty($managementCompanies)) {
-            return null;
-        }
-        return array_map(static function ($managementCompany) {
-            return [
-                'label' => '<strong>'.$managementCompany['name'].'</strong>',
-                'has_children' => true,
-                'value' => [
-                    'inn' => [
-                        'label' => 'ИНН управляющей организации',
-                        'has_children' => false,
-                        'value' => $managementCompany['inn'] ?? null,
-                    ],
-                    'ogrn' => [
-                        'label' => 'ОГРН управляющей организации',
-                        'has_children' => false,
-                        'value' => $managementCompany['ogrn'] ?? null,
-                    ],
-                    'date' => [
-                        'label' => 'Дата последнего внесения изменений',
-                        'has_children' => false,
-                        'value' => $managementCompany['date'] ?? null,
-                    ],
-                    'firstDate' => [
-                        'label' => 'Дата первого внесения сведений',
-                        'has_children' => false,
-                        'value' => $managementCompany['firstDate'] ?? null,
-                    ],
-                ],
-            ];
-        }, $managementCompanies);
-    }
-
-    // Получение cведений о держателе реестра акционеров акционерного общества
-    protected function getRegistrarOfShareholdersData(?array $registrarOfShareholders): ?array {
-        if (empty($registrarOfShareholders)) {
-            return null;
-        }
-        return [
-            'name' => [
-                'label' => 'Наименование держателя реестра акционеров',
-                'has_children' => false,
-                'value' => $registrarOfShareholders['name'] ?? null,
-            ],
-            'inn' => [
-                'label' => 'ИНН держателя реестра акционеров (если указан)',
-                'has_children' => false,
-                'value' => $registrarOfShareholders['inn'] ?? null,
-            ],
-            'ogrn' => [
-                'label' => 'ОГРН держателя реестра акционеров (если указан)',
-                'has_children' => false,
-                'value' => $registrarOfShareholders['ogrn'] ?? null,
-            ],
-            'date' => [
-                'label' => 'Дата последнего внесения изменений',
-                'has_children' => false,
-                'value' => $registrarOfShareholders['date'] ?? null,
-            ],
-            'firstDate' => [
-                'label' => 'Дата первого внесения сведений',
-                'has_children' => false,
-                'value' => $registrarOfShareholders['firstDate'] ?? null,
-            ],
-        ];
-    }
-
-    // Формирование из данных html кода
-    protected function dataToUL(array $data): string {
-        if (! empty($data['has_children'])) {
-            if ($data['value'] === null) {
-                return '';
-            }
-            $result = '<li>'.$data['label'].':</li>'.PHP_EOL;
-            $result .= '<ul>'.PHP_EOL;
-            foreach ($data['value'] as $datum) {
-                if($datum != null) {
-                    $result .= $this->dataToUL($datum);
-                }
-            }
-            $result .= '</ul>'.PHP_EOL;
-            return $result;
-        }
-        return $data['value'] !== null ? '<li>'.$data['label'].' - <strong>'.$data['value'].'</strong></li>'.PHP_EOL:'';
-    }
+    // Словарь ключей json массива
+    public array $KeyRuDictionary = [
+        'fio' => 'ФИО',
+        'okpo' => 'Код ОКПО',
+        'okato' => 'Код ОКАТО',
+        'okfs' => 'Код ОКФС',
+        'okogu' => 'Код ОКОГУ',
+        'okopf' => 'Код ОКОПФ',
+        'opf' => 'Наименование организационно-правовой формы',
+        'oktmo' => 'Код ОКТМО',
+        'registrationDate' => 'Дата образования',
+        'dissolutionDate' => 'Дата прекращения деятельности в результате ликвидации, реорганизации или других событий',
+        'status' => 'Статус организации',
+        'pfrRegNumber' => 'Регистрационный номер ПФР',
+        'fssRegNumber' => 'Регистрационный номер ФСС',
+        'fomsRegNumber' => 'Регистрационный номер ФОМС',
+        'shortenedAddress' => 'Информация о местонахождении ИП (может отсутствовать или устареть)',
+        'activities' => 'Виды деятельности',
+        'principalActivity' => 'Основной вид деятельности',
+        'complementaryActivities' => 'Дополнительные виды деятельности',
+        'okvedVersion' => 'Версия справочника ОКВЭД. Значение "2" соответствует ОК 029-2014 (КДЕС Ред. 2), отсутствие поля версии соответствует ОК 029-2001 (КДЕС Ред.1)',
+        'regInfo' => 'Сведения о регистрации',
+        'nalogRegBody' => 'Сведения о постановке на учет в налоговом органе',
+        'statusString' => 'Неформализованное описание статуса',
+        'reorganizing' => 'В процессе реорганизации (может прекратить деятельность в результате реорганизации)',
+        'bankrupting' => 'В процессе банкротства по данным ЕГРЮЛ (обращаем внимание, что не все организации, находящиеся в процессе банкротства, имеют банкротный статус)',
+        'dissolving' => 'В стадии ликвидации (либо планируется исключение из ЕГРЮЛ)',
+        'dissolved' => 'Недействующее',
+        'date' => 'Дата',
+        'zipCode' => 'Индекс',
+        'regionCode' => 'Код региона',
+        'regionName' => 'Регион',
+        'district' => 'Район',
+        'city' => 'Город',
+        'settlement' => 'Населенный пункт',
+        'street' => 'Улица',
+        'house' => 'Дом',
+        'bulk' => 'Корпус',
+        'flat' => 'Офис/квартира/комната',
+        'ogrnDate' => 'Дата присвоения ОГРН',
+        'regName' => 'Наименование органа, зарегистрировавшего юридическое лицо до 1 июля 2002 года',
+        'regNum' => 'Регистрационный номер, присвоенный до 1 июля 2002 года',
+        'nalogCode' => 'Код налогового органа',
+        'nalogName' => 'Наименование налогового органа',
+        'nalogRegDate' => 'Дата постановки на учет',
+        'nalogRegAddress' => 'Адрес регистрирующего органа',
+        'kpp' => 'КПП',
+        'date' => 'Дата',
+        'legalName' => 'Наименование юридического лица',
+        'legalAddress' => 'Юридический адрес',
+        'parsedAddressRF' => 'Разобранный на составляющие адрес в РФ',
+        'firstDate' => 'Дата первого внесения сведений',
+        'branches' => 'Филиалы и представительства',
+        'status' => 'Статус организации',
+        'registrationDate' => 'Дата образования',
+        'dissolutionDate' => 'Дата прекращения деятельности в результате ликвидации, реорганизации или других событий',
+        'heads' => 'Лица, имеющие право подписи без доверенности (руководители)',
+        'managementCompanies' => 'Управляющие компании',
+        'activities' => 'Виды деятельности',
+        'principalActivity' => 'Основной вид деятельности',
+        'complementaryActivities' => 'Дополнительные виды деятельности',
+        'okvedVersion' => 'Версия справочника ОКВЭД. Значение "2" соответствует ОК 029-2014 (КДЕС Ред. 2), отсутствие поля версии соответствует ОК 029-2001 (КДЕС Ред.1)',
+        'registrarOfShareholders' => 'Сведения о держателе реестра акционеров акционерного общества',
+        'short' => 'Краткое наименование организации',
+        'full' => 'Полное наименование организации',
+        'readable' => 'Полное наименование, приведенное к нижнему регистру с сокращением аббревиатур',
+        'name' => 'Наименование',
+        'foreignAddress' => 'Адрес вне РФ',
+        'countryName' => 'Наименование страны',
+        'addressString' => 'Строка, содержащая адрес',
+        'innfl' => 'ИННФЛ',
+        'position' => 'Должность',
+        'kladrCode' => 'Код КЛАДР',
+        'topoShortName' => 'Краткое наименование вида топонима',
+        'topoFullName' => 'Полное наименование вида топонима',
+        'topoValue' => 'Значение топонима',
+        'bulkRaw' => 'Полное значение поля "Корпус" из ЕГРЮЛ',
+        'houseRaw' => 'Полное значение поля "Дом" из ЕГРЮЛ',
+        'flatRaw' => 'Полное значение поля "Квартира" из ЕГРЮЛ',
+        'isConverted' => 'Адрес сконвертирован Фокусом из адреса муниципального деления, указанного в выписке ЕГРЮЛ, в административное деление с использованием базы ФИАС ГАР',
+        'structuredFio' => 'Структурированное ФИО',
+        'firstName' => 'Имя',
+        'lastName' => 'Фамилия',
+        'middleName' => 'Отчество',
+        'history' => 'История',
+        'kpps' => 'КПП',
+        'legalNames' => 'Наименование юридического лица',
+        'legalAddresses' => 'Список юридических адресов из истории',
+        'inn' => 'ИНН',
+        'ogrn' => 'ОГРН',
+        'isInaccuracy' => 'В ЕГРЮЛ указан признак недостоверности сведений',
+        'inaccuracyDate' => 'Дата указания признака недостоверности сведений'
+    ];
 }
